@@ -59,6 +59,7 @@ detect_targets() {
             # Single-file AGENTS.md targets
             [ -d "$home/.config/opencode" ] && AGENTS_TARGETS+=("$home/.config/opencode/AGENTS.md")
             [ -d "$home/.codex" ]          && AGENTS_TARGETS+=("$home/.codex/AGENTS.md")
+            [ -d "$home/.config/kilo" ]    && AGENTS_TARGETS+=("$home/.config/kilo/AGENTS.md")
             [ -d "$home/.config/amp" ]     && AGENTS_TARGETS+=("$home/.config/amp/AGENTS.md")
             [ -d "$home/.config/goose" ]  && AGENTS_TARGETS+=("$home/.config/goose/AGENTS.md")
 
@@ -67,9 +68,12 @@ detect_targets() {
             [ -d "$home/.gemini" ] && GEMINI_TARGETS+=("$home/.gemini/GEMINI.md")
 
             # Directory-based rules targets
-            [ -d "$home/.roo" ]          && RULES_DIR_TARGETS+=("$home/.roo/rules/AGENTS.md")
             [ -d "$home/.augment" ]      && RULES_DIR_TARGETS+=("$home/.augment/rules/AGENTS.md")
-            [ -d "$home/Documents/Cline" ] && RULES_DIR_TARGETS+=("$home/Documents/Cline/Rules/AGENTS.md")
+            if [ -d "$home/.cline" ]; then
+                RULES_DIR_TARGETS+=("$home/.cline/rules/AGENTS.md")
+            elif [ -d "$home/Documents/Cline" ]; then
+                RULES_DIR_TARGETS+=("$home/Documents/Cline/Rules/AGENTS.md")
+            fi
             ;;
         MINGW*|MSYS*|CYGWIN*|Windows_NT)
             home="${USERPROFILE:-${HOME:?}}"
@@ -77,6 +81,7 @@ detect_targets() {
             # Single-file AGENTS.md targets
             [ -d "$home/.config/opencode" ] && AGENTS_TARGETS+=("$home/.config/opencode/AGENTS.md")
             [ -d "$home/.codex" ]          && AGENTS_TARGETS+=("$home/.codex/AGENTS.md")
+            [ -d "$home/.config/kilo" ]    && AGENTS_TARGETS+=("$home/.config/kilo/AGENTS.md")
             [ -d "$home/.config/amp" ]     && AGENTS_TARGETS+=("$home/.config/amp/AGENTS.md")
             [ -d "$home/.config/goose" ]  && AGENTS_TARGETS+=("$home/.config/goose/AGENTS.md")
 
@@ -85,9 +90,12 @@ detect_targets() {
             [ -d "$home/.gemini" ] && GEMINI_TARGETS+=("$home/.gemini/GEMINI.md")
 
             # Directory-based rules targets
-            [ -d "$home/.roo" ]             && RULES_DIR_TARGETS+=("$home/.roo/rules/AGENTS.md")
             [ -d "$home/.augment" ]         && RULES_DIR_TARGETS+=("$home/.augment/rules/AGENTS.md")
-            [ -d "$home/Documents/Cline" ]  && RULES_DIR_TARGETS+=("$home/Documents/Cline/Rules/AGENTS.md")
+            if [ -d "$home/.cline" ]; then
+                RULES_DIR_TARGETS+=("$home/.cline/rules/AGENTS.md")
+            elif [ -d "$home/Documents/Cline" ]; then
+                RULES_DIR_TARGETS+=("$home/Documents/Cline/Rules/AGENTS.md")
+            fi
             ;;
         *)
             echo "Unknown OS: $os. Specify targets with --targets-* flags." >&2
@@ -102,12 +110,13 @@ label_for_target() {
     case "$target" in
         *"/opencode/"*|*"/opencode"*)   echo "OpenCode" ;;
         *"/.codex/"*|*"/.codex"*)       echo "Codex CLI" ;;
+        *"/.config/kilo/"*|*"/.config/kilo"*) echo "Kilo Code" ;;
         *"/amp/"*|*"/amp"*)             echo "Amp" ;;
         *"/.config/goose/"*|*"/.config/goose"*) echo "Goose" ;;
         *"/.claude/"*|*"/.claude"*)     echo "Claude Code" ;;
         *"/.gemini/"*|*"/.gemini"*)     echo "Gemini CLI" ;;
+        *"/.cline/"*|*"/.cline"*)       echo "Cline" ;;
         *"/Cline/"*|*"/Cline"*)         echo "Cline" ;;
-        *"/.roo/"*|*"/.roo"*)           echo "Roo Code / Kilo Code" ;;
         *"/.augment/"*|*"/.augment"*)   echo "Augment Code" ;;
         *)                              echo "$target" ;;
     esac
@@ -223,6 +232,14 @@ while [ $# -gt 0 ]; do
                 shift
             done
             ;;
+        --targets-kilo)
+            require_target_args "$@"
+            shift
+            while [ $# -gt 0 ] && [[ "$1" != --* ]]; do
+                AGENTS_TARGETS+=("$1")
+                shift
+            done
+            ;;
         --targets-amp)
             require_target_args "$@"
             shift
@@ -255,14 +272,6 @@ while [ $# -gt 0 ]; do
                 shift
             done
             ;;
-        --targets-roocode)
-            require_target_args "$@"
-            shift
-            while [ $# -gt 0 ] && [[ "$1" != --* ]]; do
-                RULES_DIR_TARGETS+=("$1")
-                shift
-            done
-            ;;
         --targets-cline)
             require_target_args "$@"
             shift
@@ -291,11 +300,11 @@ while [ $# -gt 0 ]; do
             echo "Options:"
             echo "  --targets-opencode PATH   OpenCode AGENTS.md location"
             echo "  --targets-codex PATH      Codex CLI AGENTS.md location"
+            echo "  --targets-kilo PATH       Kilo Code AGENTS.md location"
             echo "  --targets-amp PATH        Amp AGENTS.md location"
             echo "  --targets-goose PATH      Goose AGENTS.md location"
             echo "  --targets-claude PATH     Claude Code CLAUDE.md location"
             echo "  --targets-gemini PATH     Gemini CLI GEMINI.md location"
-            echo "  --targets-roocode PATH    Roo Code global rules path"
             echo "  --targets-cline PATH      Cline global rules path"
             echo "  --targets-augment PATH    Augment Code global rules path"
             echo "  --dry-run                 Show what would be synced without making changes"
@@ -304,12 +313,13 @@ while [ $# -gt 0 ]; do
             echo "Auto-detected locations:"
             echo "  OpenCode:       ~/.config/opencode/AGENTS.md"
             echo "  Codex CLI:      ~/.codex/AGENTS.md"
+            echo "  Kilo Code:      ~/.config/kilo/AGENTS.md"
             echo "  Amp:            ~/.config/amp/AGENTS.md"
             echo "  Goose:          ~/.config/goose/AGENTS.md"
             echo "  Claude Code:    ~/.claude/CLAUDE.md"
             echo "  Gemini CLI:     ~/.gemini/GEMINI.md"
-            echo "  Roo Code:       ~/.roo/rules/AGENTS.md"
-            echo "  Cline:          ~/Documents/Cline/Rules/AGENTS.md"
+            echo "  Cline:          ~/.cline/rules/AGENTS.md"
+            echo "  Cline fallback: ~/Documents/Cline/Rules/AGENTS.md"
             echo "  Augment Code:   ~/.augment/rules/AGENTS.md"
             exit 0
             ;;

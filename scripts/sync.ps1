@@ -42,12 +42,13 @@ function Get-TargetLabel {
     switch -Wildcard ($Target) {
         "*\opencode\*"  { "OpenCode" }
         "*\.codex\*"    { "Codex CLI" }
+        "*\.config\kilo\*" { "Kilo Code" }
         "*\amp\*"             { "Amp" }
         "*\.config\goose\*"    { "Goose" }
         "*\.claude\*"         { "Claude Code" }
         "*\.gemini\*"   { "Gemini CLI" }
+        "*\.cline\*"    { "Cline" }
         "*\Cline\*"     { "Cline" }
-        "*\.roo\*"      { "Roo Code / Kilo Code" }
         "*\.augment\*"  { "Augment Code" }
         default         { $Target }
     }
@@ -61,11 +62,11 @@ function Show-Help {
     Write-Host "Options:"
     Write-Host "  -TargetsOpenCode PATH   OpenCode AGENTS.md location"
     Write-Host "  -TargetsCodex PATH      Codex CLI AGENTS.md location"
+    Write-Host "  -TargetsKilo PATH       Kilo Code AGENTS.md location"
     Write-Host "  -TargetsAmp PATH        Amp AGENTS.md location"
     Write-Host "  -TargetsGoose PATH      Goose AGENTS.md location"
     Write-Host "  -TargetsClaude PATH     Claude Code CLAUDE.md location"
     Write-Host "  -TargetsGemini PATH     Gemini CLI GEMINI.md location"
-    Write-Host "  -TargetsRooCode PATH    Roo Code global rules path"
     Write-Host "  -TargetsCline PATH      Cline global rules path"
     Write-Host "  -TargetsAugment PATH    Augment Code global rules path"
     Write-Host "  -DryRun                 Show what would be synced without making changes"
@@ -74,12 +75,13 @@ function Show-Help {
     Write-Host "Auto-detected locations:"
     Write-Host "  OpenCode:       ~/.config/opencode/AGENTS.md"
     Write-Host "  Codex CLI:      ~/.codex/AGENTS.md"
+    Write-Host "  Kilo Code:      ~/.config/kilo/AGENTS.md"
     Write-Host "  Amp:            ~/.config/amp/AGENTS.md"
     Write-Host "  Goose:          ~/.config/goose/AGENTS.md"
     Write-Host "  Claude Code:    ~/.claude/CLAUDE.md"
     Write-Host "  Gemini CLI:     ~/.gemini/GEMINI.md"
-    Write-Host "  Roo Code:       ~/.roo/rules/AGENTS.md"
-    Write-Host "  Cline:          ~/Documents/Cline/Rules/AGENTS.md"
+    Write-Host "  Cline:          ~/.cline/rules/AGENTS.md"
+    Write-Host "  Cline fallback: ~/Documents/Cline/Rules/AGENTS.md"
     Write-Host "  Augment Code:   ~/.augment/rules/AGENTS.md"
 }
 
@@ -97,6 +99,9 @@ function Detect-Targets {
     if (Test-Path (Join-Path $HomeDir ".codex")) {
         $script:AgentsTargets += Join-Path $HomeDir ".codex\AGENTS.md"
     }
+    if (Test-Path (Join-Path $HomeDir ".config\kilo")) {
+        $script:AgentsTargets += Join-Path $HomeDir ".config\kilo\AGENTS.md"
+    }
     if (Test-Path (Join-Path $HomeDir ".config\amp")) {
         $script:AgentsTargets += Join-Path $HomeDir ".config\amp\AGENTS.md"
     }
@@ -109,13 +114,13 @@ function Detect-Targets {
     if (Test-Path (Join-Path $HomeDir ".gemini")) {
         $script:GeminiTargets += Join-Path $HomeDir ".gemini\GEMINI.md"
     }
-    if (Test-Path (Join-Path $HomeDir ".roo")) {
-        $script:RulesDirTargets += Join-Path $HomeDir ".roo\rules\AGENTS.md"
-    }
     if (Test-Path (Join-Path $HomeDir ".augment")) {
         $script:RulesDirTargets += Join-Path $HomeDir ".augment\rules\AGENTS.md"
     }
-    if (Test-Path (Join-Path $HomeDir "Documents\Cline")) {
+    if (Test-Path (Join-Path $HomeDir ".cline")) {
+        $script:RulesDirTargets += Join-Path $HomeDir ".cline\rules\AGENTS.md"
+    }
+    elseif (Test-Path (Join-Path $HomeDir "Documents\Cline")) {
         $script:RulesDirTargets += Join-Path $HomeDir "Documents\Cline\Rules\AGENTS.md"
     }
 }
@@ -220,6 +225,17 @@ while ($i -lt $args.Count) {
                 $i++
             }
         }
+        "-TargetsKilo" {
+            if ($i + 1 -ge $args.Count -or $args[$i + 1] -like "-*") {
+                Write-Error "Missing path after -TargetsKilo"
+                exit 1
+            }
+            $i++
+            while ($i -lt $args.Count -and $args[$i] -notlike "-*") {
+                $AgentsTargets += $args[$i]
+                $i++
+            }
+        }
         "-TargetsAmp" {
             if ($i + 1 -ge $args.Count -or $args[$i + 1] -like "-*") {
                 Write-Error "Missing path after -TargetsAmp"
@@ -261,17 +277,6 @@ while ($i -lt $args.Count) {
             $i++
             while ($i -lt $args.Count -and $args[$i] -notlike "-*") {
                 $GeminiTargets += $args[$i]
-                $i++
-            }
-        }
-        "-TargetsRooCode" {
-            if ($i + 1 -ge $args.Count -or $args[$i + 1] -like "-*") {
-                Write-Error "Missing path after -TargetsRooCode"
-                exit 1
-            }
-            $i++
-            while ($i -lt $args.Count -and $args[$i] -notlike "-*") {
-                $RulesDirTargets += $args[$i]
                 $i++
             }
         }

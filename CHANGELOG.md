@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.2.0
+
+- Made `Boundaries` invariant at the global layer and expanded them with explicit authority, secret-handling, destructive-action approval, and untrusted-instruction rules.
+- Reworked uncertainty handling so agents ask only about unresolved material choices and can take documented, reversible fallbacks when user input is unavailable.
+- Rebuilt workflow and subagent routing around exclusive execution paths for parallel I/O, single-track work, one independent side track, or multiple concurrent tracks.
+- Strengthened retry, scope, commit-hook, completion, and response rules around evidence and actual validation results.
+- Updated sync support with Kilo's current global path and flags, Cline's current path with a legacy fallback, and `scripts/verify-sync-targets.mjs`.
+
 ## v1.1.3
 
 - Fixed `sync.ps1` crash caused by overwriting read-only `$HOME`.
